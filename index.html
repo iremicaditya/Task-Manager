@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="cat.gif" type="image/gif">
+    <title>Task Manager</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+        }
+        .todo-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .todo-input {
+            width: calc(100% - 0px);
+            background-color: #333;
+            padding: 10px;
+            font-size: 18px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .todo-input:focus {
+            border-color: #3498db;
+            outline: none;
+            background-color: #333; 
+        }
+        .todo-input:focus {
+            border-color: #333;
+            outline: none;
+        }
+        .todo-list {
+            list-style: none;
+            padding: 0;
+        }
+        .todo-item {
+            padding: 15px;
+            background-color: #2e2e2e;
+            border-bottom: 1px solid #2e2e2e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+        }
+        .todo-item.completed {
+            text-decoration: line-through;
+            color: grey;
+        }
+        .todo-item button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .todo-item button:hover {
+            color: darkred;
+        }
+        .todo-item .tick-btn {
+            background-color: #2ed573;
+            margin-right: 10px;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .complete-all {
+            background-color: #2ed573;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            border-radius: 5px;
+        }
+        .complete-all:disabled {
+            background-color: #333;
+            cursor: not-allowed;
+        }
+        .complete-all:hover {
+            background-color: #3dbd71;
+        }
+        .sticker-container {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        .sticker-container img {
+            max-width: 150px;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+        }
+        .day-counter {
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #d9d9d9;
+        }
+        .day-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .day-nav button {
+            padding: 10px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .day-nav button:disabled {
+            background-color: #333;
+            cursor: not-allowed;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        @media (max-width: 600px) {
+            .todo-input {
+                font-size: 16px;
+            }
+            .complete-all {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-container">
+        <h1>My To-Do List</h1>
+        <div class="day-counter">Day <span id="day-number">1</span></div>
+        
+        <div class="sticker-container" id="sticker-container">
+            <h3 style="color: white;">Congratulations! You Deserve This.</h3>
+            <img src="" alt="Sticker" id="sticker" style="display: none;">
+        </div>
+        
+        <div class="day-nav">
+            <button id="prev-day" onclick="changeDay(-1)">Previous Day</button>
+            <button id="next-day" onclick="changeDay(1)" disabled>Next Day</button>
+        </div>
+        
+        <input type="text" id="new-task" class="todo-input" placeholder="Add new task...">
+        <ul class="todo-list" id="task-list"></ul>
+        <button class="complete-all" onclick="completeAll()" disabled>Complete All Tasks</button>
+    </div>
+
+    <footer>
+        Developed by <strong>Aditya</strong>
+    </footer>
+
+    <script>
+        let currentDay = parseInt(localStorage.getItem('currentDay')) || 1;
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+
+        const stickers = [
+            'cat.gif',
+            'cat1.gif',
+            'cat2.gif',
+            'cat3.gif',
+            'cat4.gif',
+            'cat5.gif',
+            'cat6.gif',
+            'cat7.gif',
+            'cat8.gif',
+            'cat9.gif',
+            'cat10.gif',
+            'cat11.gif',
+            'cat12.gif',
+            'cat13.gif',
+            'cat14.gif',
+            'cat15.gif'
+        ];
+        
+        updateDayCounter();
+        loadTasks(currentDay);
+
+        document.getElementById('new-task').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const taskName = e.target.value.trim();
+                if (taskName) {
+                    addTask(taskName);
+                    e.target.value = '';
+                }
+            }
+        });
+
+        function addTask(taskName) {
+            const taskListForDay = tasks[currentDay] || [];
+            taskListForDay.push({ name: taskName, completed: false });
+            tasks[currentDay] = taskListForDay;
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            loadTasks(currentDay);
+            toggleCompleteAllButton();
+        }
+
+        function toggleTask(index) {
+            tasks[currentDay][index].completed = !tasks[currentDay][index].completed;
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            loadTasks(currentDay);
+            toggleNextDayButton();
+        }
+
+        function loadTasks(day) {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            const dayTasks = tasks[day] || [];
+            dayTasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.classList.add('todo-item');
+                if (task.completed) {
+                    li.classList.add('completed');
+                }
+                li.innerHTML = ` 
+                    <span class="tick-btn" onclick="toggleTask(${index})">✔</span>
+                    ${task.name}
+                    <button onclick="removeTask(${index})" class="delete-btn">
+                        <i class="material-icons" style="color: red;">delete</i>
+                    </button>
+                `;
+                taskList.appendChild(li);
+            });
+            toggleNextDayButton();
+            toggleCompleteAllButton();
+        }
+
+        function removeTask(index) {
+            tasks[currentDay].splice(index, 1);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            loadTasks(currentDay);
+            toggleCompleteAllButton();
+        }
+
+        function completeAll() {
+            if (tasks[currentDay]) {
+                tasks[currentDay].forEach(task => task.completed = true);
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+            loadTasks(currentDay);
+            
+            const randomSticker = stickers[Math.floor(Math.random() * stickers.length)];
+            document.getElementById('sticker').src = randomSticker; 
+            document.getElementById('sticker').style.display = 'block'; 
+            document.getElementById('sticker-container').style.display = 'block'; 
+            
+            toggleNextDayButton(); // Check the Next Day button state after completing all tasks
+        }
+
+        function changeDay(direction) {
+            currentDay += direction;
+            localStorage.setItem('currentDay', currentDay);
+            updateDayCounter();
+            loadTasks(currentDay);
+            document.getElementById('sticker').style.display = 'none'; 
+            document.getElementById('sticker-container').style.display = 'none'; 
+        }
+
+        function updateDayCounter() {
+            document.getElementById('day-number').textContent = currentDay;
+            document.getElementById('prev-day').disabled = currentDay === 1;
+
+            const dayTasks = tasks[currentDay] || [];
+            const allTasksCompleted = dayTasks.length > 0 && dayTasks.every(task => task.completed);
+            document.getElementById('next-day').disabled = !allTasksCompleted;
+        }
+
+        function toggleCompleteAllButton() {
+            const dayTasks = tasks[currentDay] || [];
+            const anyTaskRemaining = dayTasks.length > 0 && dayTasks.some(task => !task.completed);
+            document.querySelector('.complete-all').disabled = !anyTaskRemaining;
+        }
+
+        function toggleNextDayButton() {
+            const dayTasks = tasks[currentDay] || [];
+            const allTasksCompleted = dayTasks.length > 0 && dayTasks.every(task => task.completed);
+            document.getElementById('next-day').disabled = !allTasksCompleted;
+        }
+    </script>
+</body>
+</html>
